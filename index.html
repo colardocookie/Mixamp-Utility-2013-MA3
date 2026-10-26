@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MixAmp Utility</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><b>MixAmp Utility</b><span>MixAmp Pro (2013) · firmware 3374</span></div>
+  <div class="conn"><span class="pill" id="connPill">Not connected</span><button type="button" id="connectBtn" class="primary">Connect MixAmp</button></div>
+</header>
+
+<main class="wrap">
+  <div class="banner warn" id="unsupported" hidden>
+    This browser can't talk to USB devices. Open this page in Chrome or Edge on <code>http://localhost</code>. You can still design presets offline.
+  </div>
+
+  <section class="panel" aria-labelledby="h-device">
+    <div class="panel-head"><h2 id="h-device">Device</h2>
+      <div class="actions"><button type="button" id="refreshBtn" disabled>Refresh status</button><button type="button" id="backupBtn" disabled>Save backup file</button><label class="filebtn" for="openBackup">Open backup file<input type="file" id="openBackup" accept=".bin"></label></div>
+    </div>
+    <dl class="facts" id="facts">
+      <div><dt>Firmware</dt><dd id="fFirmware">–</dd></div>
+      <div><dt>Active preset</dt><dd id="fPreset">–</dd></div>
+      <div><dt>Dolby</dt><dd id="fDolby">–</dd></div>
+      <div><dt>Mic noise gate (live)</dt><dd id="fGate">–</dd></div>
+      <div><dt>Codec EQ (live)</dt><dd id="fCodec">–</dd></div>
+      <div><dt>Backup</dt><dd id="fBackup">Not taken</dd></div>
+    </dl>
+    <p class="note">When you connect, the utility reads a backup of the five preset slots and the MixAmp's factory EQ tables into this page. Nothing is saved to your computer unless you press Save backup file.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-slots">
+    <h2 id="h-slots">Preset slots</h2>
+    <p class="note">The four lights around the MixAmp's EQ button show which slot is selected. Pick a slot to edit it.</p>
+    <div class="slots" id="slots" role="tablist" aria-label="Preset slots"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-editor">
+    <div class="panel-head"><div class="edtitle"><span id="edButton"></span><h2 id="h-editor"><span id="edSlot">Slot 3</span></h2></div><span class="sub" id="edNow"></span></div>
+
+    <div class="grid2">
+      <div class="field">
+        <span class="label">EQ curve</span>
+        <div class="seg" role="radiogroup" aria-label="EQ curve">
+          <label><input type="radio" name="curveMode" value="custom" checked> Custom 14-band</label>
+          <label><input type="radio" name="curveMode" value="factory"> Factory curve for this slot</label>
+        </div>
+      </div>
+      <div class="field">
+        <span class="label">Settings</span>
+        <div class="row rowwrap">
+          <label for="codecEq">Codec EQ <select id="codecEq"><option value="off">Off</option><option value="factory">Factory</option></select></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="mic" role="group" aria-labelledby="micLabel">
+      <div class="row rowwrap">
+        <span class="label" id="micLabel">Microphone noise gate</span>
+        <label for="gate">Mode <select id="gate">
+          <option value="off">Off</option>
+          <option value="soft">Gentle noise reduction</option>
+          <option value="factory">Factory gate</option>
+          <option value="strong">Strong gate</option>
+          <option value="custom">Custom</option>
+        </select></label>
+      </div>
+      <div class="gatecontrols" id="gateControls">
+        <label for="gThr">Threshold <input type="range" id="gThr" min="-82.5" max="-36" step="1.5"><output id="gThrOut" for="gThr"></output></label>
+        <label for="gRatio">Ratio <select id="gRatio"><option value="1">2:1 (gentle)</option><option value="2">4:1</option><option value="3">8:1 (hard)</option></select></label>
+        <label for="gFloor">Max reduction <input type="range" id="gFloor" min="-36" max="0" step="6"><output id="gFloorOut" for="gFloor"></output></label>
+      </div>
+      <p class="note" id="gateNote"></p>
+    </div>
+
+    <div id="customBox">
+      <div class="starts" id="starts"></div>
+
+      <div class="library">
+        <div class="libhead">
+          <div><span class="label">Target library</span><p class="note" id="libSub">Loading the target library…</p></div>
+          <div class="row rowwrap">
+            <label for="headphone" class="alltargets">Headphone <select id="headphone"></select></label>
+            <button type="button" id="removeHp" hidden>Remove</button>
+            <label for="allTargets" class="alltargets">All targets <select id="allTargets"><option value="">Choose a target…</option></select></label>
+          </div>
+        </div>
+        <div class="companies" id="companies" role="list"></div>
+        <div class="companyPick" id="companyPick" hidden>
+          <label for="companyTarget"><span id="companyName"></span> target <select id="companyTarget"></select></label>
+          <p class="note" id="companyNote"></p>
+        </div>
+      </div>
+
+      <details class="importbox" id="importBox">
+        <summary>Import</summary>
+        <div class="importgrid">
+          <div class="importcard">
+            <b>Your headphone measurement</b>
+            <p class="note">Load your headphone's frequency response as a CSV with <code>frequency,raw</code> columns. Best is the CSV from AutoEq's <code>results</code> folder: it also carries AutoEq's own Harman reference for that rig, so the fits match AutoEq exactly. Pick the rig it was measured on.</p>
+            <label class="filebtn" for="measurementFile">Choose measurement file<input type="file" id="measurementFile" accept=".txt,.csv"></label>
+            <div class="row rowwrap">
+              <label for="measurementRig">Measured on <select id="measurementRig"></select></label>
+              <input id="measurementName" type="text" placeholder="Name, e.g. Sennheiser HD 600" aria-label="Headphone name">
+              <button type="button" id="measurementApply" disabled>Add headphone</button>
+            </div>
+          </div>
+          <div class="importcard">
+            <b>AutoEq profile (any headphone)</b>
+            <p class="note">Make a profile for your headphone and target on autoeq.app, then load or paste ParametricEQ.txt, FixedBandEQ.txt, GraphicEQ.txt or the results CSV. It is fitted to the MixAmp's 14 bands.</p>
+            <label class="filebtn" for="profileFile">Choose profile file<input type="file" id="profileFile" accept=".txt,.csv"></label>
+            <textarea id="profileText" rows="4" placeholder="…or paste the profile text here"></textarea>
+            <div class="row rowwrap"><input id="profileName" type="text" placeholder="Name, e.g. HD 600 · Harman" aria-label="Profile name"><button type="button" id="profileApply">Use profile</button></div>
+          </div>
+          <div class="importcard">
+            <b>Target curve</b>
+            <p class="note">Add a target that isn't in the library, such as an IEF curve you're allowed to use (CSV, or squig.link / REW text). Pick the rig it was measured on. It's added under Imported and fitted to your headphone with AutoEq's method.</p>
+            <label class="filebtn" for="targetFile">Choose target file<input type="file" id="targetFile" accept=".txt,.csv"></label>
+            <div class="row rowwrap">
+              <label for="targetRig">Measured on <select id="targetRig"></select></label>
+              <input id="targetName" type="text" placeholder="Name, e.g. IEF Neutral 2023" aria-label="Target name">
+              <button type="button" id="targetApply" disabled>Add target</button>
+            </div>
+          </div>
+        </div>
+        <div class="result" id="importResult" aria-live="polite"></div>
+      </details>
+
+      <div class="bankwrap"><div class="bank" id="bank"></div></div>
+      <div class="row rowwrap">
+        <label for="level" class="levelLabel">Level <input type="range" id="level" min="-30" max="0" step="0.1"><output id="levelOut" for="level"></output></label>
+        <button type="button" id="matchBtn">Match preset C loudness</button>
+      </div>
+    </div>
+
+    <div id="chart" class="chart"></div>
+    <div class="legend"><span><i></i>New preset</span><span><i class="ref"></i>Slot now (from backup)</span><span><i class="lim"></i>Loudness limit</span><span id="idealLegend" hidden><i class="ideal"></i>Ideal correction</span></div>
+
+    <div class="checks" id="checks" aria-live="polite"></div>
+
+    <div class="writebox">
+      <div class="row rowwrap">
+        <label for="confirmSlot">Type the slot number to confirm <input id="confirmSlot" inputmode="numeric" maxlength="1" size="2"></label>
+        <button type="button" class="primary" id="writeBtn" disabled>Write to slot</button>
+        <button type="button" id="restoreBtn" disabled>Restore slot to factory</button>
+        <button type="button" id="verifyBtn" disabled>Check on MixAmp</button>
+        <button type="button" id="saveImageBtn">Save image file</button>
+        <span class="hint" id="writeHint" aria-live="polite"></span>
+      </div>
+      <p class="note" id="writeNote">The MixAmp loads a slot when you select it. After writing, turn the selector to this slot, then press "Check on MixAmp".</p>
+      <div class="result" id="result" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-log">
+    <div class="panel-head"><h2 id="h-log">Log</h2><div class="actions"><button type="button" id="saveLogBtn">Save log</button></div></div>
+    <ol class="log" id="log"></ol>
+  </section>
+
+  <p class="note foot">Only the five 1 KB preset slots can be written; the MixAmp firmware itself is never touched. A slot that fails its checksum makes the MixAmp fall back to the factory preset.</p>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

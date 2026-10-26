@@ -1,0 +1,6 @@
+node_modules/
+tools/.venv-autoeq/
+__pycache__/
+*.pyc
+test/fixtures/
+data/local/
