@@ -11,7 +11,28 @@ What it changes, per slot:
 
 It writes **only** the five 1 KB preset slots in data flash (`0x800400`–`0x801400`). The MixAmp firmware itself is never touched. A slot whose checksum fails makes the MixAmp load the factory preset, and "Restore slot to factory" uses that.
 
-## Run it
+## Windows: double-click to run
+
+Download **MixAmp-Utility.exe** from [Releases](https://github.com/colardocookie/Mixamp-Utility-2013-MA3/releases).
+For development builds, open the latest successful **Windows launcher** run under
+[Actions](https://github.com/colardocookie/Mixamp-Utility-2013-MA3/actions/workflows/windows.yml),
+download **MixAmp-Utility-Windows-x64**, and extract the ZIP first (artifact downloads require GitHub sign-in).
+
+1. Double-click **MixAmp-Utility.exe**. No Python, Node, installation or administrator access is needed.
+2. It opens Microsoft Edge or Google Chrome and displays the local address, normally **http://127.0.0.1:8765/**.
+   If the browser does not open, copy that address into Edge or Chrome. Firefox does not support WebHID.
+3. Press **Connect MixAmp**, choose the device, and start using the app.
+4. Keep the launcher window open. Close it or press **Ctrl+C** when finished.
+
+This is a portable Windows x64 application; delete the executable to remove it.
+The unsigned executable may show a Windows reputation warning. Downloads include a SHA-256 checksum and license notices.
+All app files and the target library are bundled; the app needs no internet connection.
+The server listens only on this PC. USB permission and all existing device checks remain in the browser.
+Imported profiles stay in the browser, and backups are saved only when you choose **Save backup file**.
+If another program occupies the normal port, the launcher displays an alternate address;
+browser imports and device permissions belong to each address separately.
+
+## Run from source
 
 WebHID needs Chrome or Edge, and a secure page (`http://localhost` or `https://` counts). Serve this folder with any static web server, for example:
 
@@ -76,6 +97,24 @@ Each slot carries the MixAmp's mic noise gate settings, which the MixAmp loads w
 Modes: **Off**, **Gentle noise reduction** (−60 dB, 2:1, at most −12 dB: lowers steady background noise without chopping words), **Factory gate** (−54 dB, 4:1, −36 dB), **Strong gate** (−48 dB, 8:1, −36 dB), or **Custom**. Only the gate's own register fields may change; everything else in the mic compressor stays factory.
 
 This is a level-based gate, not voice-aware noise suppression. The MixAmp's chips have no noise-suppression processing that can be enabled: noise louder than the threshold, or noise while you talk, still gets through. For real suppression, use software on the PC (for example NVIDIA Broadcast or an RNNoise-based filter).
+
+## Build the Windows executable
+
+The **Windows launcher** GitHub Actions workflow builds and smoke-tests the executable on Windows,
+including starting it outside the checkout and checking every bundled asset. It runs the
+existing device-safety tests against simulated devices only. Publishing a GitHub Release
+runs the same build and attaches the executable, checksum and license notices automatically.
+
+To build locally on Windows with Python 3.12:
+
+```powershell
+python -m pip install pyinstaller==6.22.3
+python tools/build_windows.py
+```
+
+Output: `dist/MixAmp-Utility.exe`. Only the explicit public asset list in `launcher.py`
+is packaged. Private fixtures, firmware dumps and local headphone profiles are excluded.
+The source launcher also runs with `python launcher.py` (or `python launcher.py --no-browser`).
 
 ## Develop
 
