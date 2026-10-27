@@ -3,6 +3,7 @@ import argparse
 import errno
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import os
+import socket
 from pathlib import Path
 import subprocess
 import sys
@@ -25,6 +26,16 @@ def asset_root():
 
 def load_assets(root):
     return {name: (root / name).read_bytes() for name in ASSETS}
+
+
+class LoopbackServer(ThreadingHTTPServer):
+    # HTTPServer enables SO_REUSEADDR, which permits duplicate listeners on Windows.
+    allow_reuse_address = False
+
+    def server_bind(self):
+        if hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
 
 
 def make_server(assets, port=8765):
@@ -67,7 +78,7 @@ def make_server(assets, port=8765):
     # Never assume an occupied port belongs to this app.
     for candidate in ([0] if port == 0 else range(port, min(port + 30, 65536))):
         try:
-            server = ThreadingHTTPServer(('127.0.0.1', candidate), Handler)
+            server = LoopbackServer(('127.0.0.1', candidate), Handler)
             server.daemon_threads = True
             return server
         except OSError as exc:
