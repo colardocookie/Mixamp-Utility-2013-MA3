@@ -175,7 +175,7 @@ export function customAkm(gains, pregainDb = null) {
 
 // ------------------------------------------------------------ slot images
 
-export const slotCpuAddress = slot => { if (!(slot >= 0 && slot < NUM_SLOTS)) throw new Error('Slot must be 0..4'); return SLOT_CPU_BASE + slot * SLOT_SIZE; };
+export const slotCpuAddress = slot => { if (!Number.isInteger(slot) || slot < 0 || slot >= NUM_SLOTS) throw new Error('Slot must be an integer 0..4'); return SLOT_CPU_BASE + slot * SLOT_SIZE; };
 export const slotFlashAddress = slot => SLOT_FLASH_BASE + slotCpuAddress(slot) - SLOT_CPU_BASE;
 
 // Mic noise gate (WM8994 AIF1 DRC1 downward expander, datasheet pp73-79). Only these fields may differ

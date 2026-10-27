@@ -77,7 +77,11 @@ fixtureTest('framing matches the Python packet builders', () => {
 
 test('slot writes only ever target the five data-flash slot sectors', () => {
   for (let s = 0; s < 5; s++) assert.equal(core.slotFlashAddress(s), 0x800400 + 0x400 * s);
-  assert.throws(() => core.slotFlashAddress(5));
+  for (const slot of [-1, 5, 0.5, NaN, Infinity, '3', null, undefined]) {
+    assert.throws(() => core.slotCpuAddress(slot), /integer 0..4/);
+    assert.throws(() => core.slotFlashAddress(slot), /integer 0..4/);
+    assert.throws(() => core.slotWriteStream(slot, core.ERASED_SLOT, 1), /integer 0..4/);
+  }
   assert.throws(() => core.slotWriteStream(3, new Uint8Array(1000), 1));
   assert.throws(() => core.slotWriteStream(3, new Uint8Array(1024), 1));       // zeros: fails checks
   const stream = core.slotWriteStream(2, core.ERASED_SLOT, 9);               // restore-to-factory image
